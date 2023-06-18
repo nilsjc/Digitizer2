@@ -1,8 +1,7 @@
 /*
  * File:   main.c
  * Author: Nils Edvardsson
- *
- * Created on den 18 maj 2023, 21:51
+ * Created 18 maj 2023, 21:51
  */
 #pragma config FOSC = INTRCIO   // Oscillator Selection bits (INTOSCIO oscillator: I/O function on RA4/OSC2/CLKOUT pin, I/O function on RA5/OSC1/CLKIN)
 #pragma config WDTE = OFF       // Watchdog Timer Enable bit (WDT disabled and can be enabled by SWDTEN bit of the WDTCON register)
@@ -103,65 +102,64 @@ void selectRythm(void)
     switch(funcNumber)
     {
         case ROCK1:
-            rythmBeat = 16;
-            cymbal = 0;
-            rim =   0b0000000100000000;
-            snare = 0b0000101000001000;
-			kick  = 0b1000000010000000;
-			hihat = 0b1010101010101010;
-			accent= 0b1000100010001000;
-            break;
+		rythmBeat = 16;
+		cymbal = 0;
+		rim =   0b0000000100000000;
+		snare = 0b0000101000001000;
+		kick  = 0b1000000010000000;
+		hihat = 0b1010101010101010;
+		accent= 0b1000100010001000;
+		break;
             
         case BOSSANOVA:
-            rythmBeat = 16;
-            snare = 0b0000000100000001;
-            cymbal= 0b1000001000000100;
-			hihat = 0b1111111111111111;
-			  rim = 0b1010010010100100;
-			 kick = 0b1001100110011001;
-			accent = 0b0000100000001000;
-             break;
+		rythmBeat = 16;
+		snare = 0b0000000100000001;
+		cymbal= 0b1000001000000100;
+		hihat = 0b1111111111111111;
+		rim = 0b1010010010100100;
+		kick = 0b1001100110011001;
+		accent = 0b0000100000001000;
+		break;
             
         case DISCO1:
-            rythmBeat = 16;
-            rim = 0;
-            cymbal = 0b1000000000001000;
-            hihat  = 0b1010101010101010;
-            snare  = 0b0000100000001000;
-			kick   = 0b1000000110000000;
-			accent = 0b1000100000001000;
-            break;
+		rythmBeat = 16;
+		rim = 0;
+		cymbal = 0b1000000000001000;
+		hihat  = 0b1010101010101010;
+		snare  = 0b0000100000001000;
+		kick   = 0b1000000110000000;
+		accent = 0b1000100000001000;
+		break;
             
         case RUMBA:
-            hihat =    0b1111111110111111;
-			snare =    0b0110110101101101;
-			rim =      0b1001001010010010;
-			cymbal   = 0b1001001000101000;
-			kick    =  0b1000101010001010;
-			accent  =  0b1000110000001000;
-			rythmBeat = 16;
-			break;
+		hihat =    0b1111111110111111;
+		snare =    0b0110110101101101;
+		rim =      0b1001001010010010;
+		cymbal   = 0b1001001000101000;
+		kick    =  0b1000101010001010;
+		accent  =  0b1000110000001000;
+		rythmBeat = 16;
+		break;
             
         case WALTZ:
-            rythmBeat = 12;
-            rim = 0;
-            cymbal =    0b100000101000;
-			snare  =    0b000010001000;
-			kick   =    0b100000000000;
-            hihat  =    0b001000100010;
-			accent =    0b000000001000;
-            break;
+		rythmBeat = 12;
+		rim = 0;
+		cymbal =    0b100000101000;
+		snare  =    0b000010001000;
+		kick   =    0b100000000000;
+		hihat  =    0b001000100010;
+		accent =    0b000000001000;
+		break;
             
         case ENKA:
-            rythmBeat = 16;
-            hihat   = 0b1010101010101010;
-            snare   = 0b0011001000110010;
-            kick    = 0b1000100010001000;
-            accent  = 0b1000000010000000;
-            rim     = 0b0001000100010001;
-            cymbal  = 0b0000000010000000;
-            break;
-            
+		rythmBeat = 16;
+		hihat   = 0b1010101010101010;
+		snare   = 0b0011001000110010;
+		kick    = 0b1000100010001000;
+		accent  = 0b1000000010000000;
+		rim     = 0b0001000100010001;
+		cymbal  = 0b0000000010000000;
+		break;            
     }
     resetRythm();
 }
@@ -498,7 +496,7 @@ void main(void) {
                 funcNumber = newFuncNumber;
                 selectFunction();
             }
-            // don´t forget or the external 
+            // donÂ´t forget or the external 
             // input will not be sampled!
             // select AN10
             ADCON0bits.CHS = VOLTAGE_INPUT;
