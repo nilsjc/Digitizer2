@@ -48,11 +48,12 @@
 unsigned char lock = 0;
 unsigned char xorOn = 0;
 unsigned char extInput = 0;
-unsigned char lookMode = 0;
+unsigned char tick = 0;
 unsigned char funcNumber = 0;
 unsigned char top = 63;
 unsigned char topPlusOne = 64;
 unsigned char extUD_noChange = 1;
+unsigned char extRS_noChange = 1;
 
 unsigned volatile char newValue = 0;
 unsigned volatile char oldValue = 0;
@@ -212,7 +213,7 @@ void countUpDown(void)
     }else{
         index--;
     }
-    if(index==top)
+    if(index>=top)
     {
         up=0;
     }
@@ -250,7 +251,7 @@ void noiseWave(void)
 }
 void randWave(void)
 {
-    if(index==0 && lock==0)// && lock==0
+    if(index==0 && lock==0)
     {
         char n;
         for(n=0; n<16;n++)
@@ -452,7 +453,7 @@ void main(void) {
         }
         
         
-        if(RESETINPUT)
+        if(RESETINPUT && extRS_noChange)
         {
             if(funcNumber<10)
             {
@@ -466,6 +467,11 @@ void main(void) {
             }else{
                 resetRythm();
             }
+            extRS_noChange = 0;
+        }
+        if(!extRS_noChange && RESETINPUT==0)
+        {
+            extRS_noChange = 1;
         }
         
         while(ADCON0bits.GO_DONE){};
@@ -483,7 +489,7 @@ void main(void) {
         }else{
             extInput = ADRESH >> 2;
         }
-        if(lookMode==0)
+        if(tick % 16 == 0)
         {
             ADCON0bits.CHS = SELECT_INPUT; // select AN3
             char l;
@@ -502,12 +508,7 @@ void main(void) {
             ADCON0bits.CHS = VOLTAGE_INPUT;
             for(l=0; l < 8; l++){}
         }
-        if(lookMode>7)
-        {
-            lookMode=0;
-        }else{
-            ++lookMode;
-        }
+        tick++;
     }
     return;
 }
