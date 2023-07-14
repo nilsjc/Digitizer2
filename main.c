@@ -20,7 +20,6 @@
 #define UPDOWNINPUT PORTBbits.RB6
 #define RESETINPUT PORTBbits.RB5
 #define CLOCK_INPUT PORTAbits.RA2
-#define MONITOR_SELECT fnurr
 
 // MODES
 #define INSTANT_AD 0
@@ -62,28 +61,13 @@ unsigned volatile char up = 1;
 unsigned volatile char preset[64];
 unsigned volatile char rythmBeat = 16;
 unsigned volatile char d_index=0;
-unsigned volatile char oldRValue = 0;
-unsigned volatile char magicVal = 3;
+unsigned volatile char variation = 0;
+
+unsigned volatile int nze = 0b1000000000000000;
 
 const unsigned char PulseTime = 128;
 
 const unsigned char SineWaveLo[] = { 32,44,54,61,63,61,54,44,32,19,9,2,0,2,9,19};
-
-const unsigned char Noise[] = {35, 10, 0, 7, 29, 57, 36, 43, 16, 40, 62, 61, 245, 40, 160, 32, 
-                               22, 4, 6, 22, 7, 29, 142, 52, 51, 229, 48, 43, 41, 3, 10, 61, 
-                               10, 14, 32, 34, 49, 19, 57, 10, 61, 24, 5, 40, 38, 44, 32, 3, 
-                               35, 28, 14, 39, 29, 4, 31, 44, 49, 56, 45, 157, 54, 29, 47, 9, 
-                               27, 12, 44, 255, 56, 40, 33, 38, 38, 49, 5, 22, 27, 22, 24, 54, 
-                               22, 26, 27, 0, 1, 3, 25, 16, 40, 44, 57, 19, 55, 10, 50, 33, 45, 
-                               61, 46, 40, 5, 38, 37, 57, 1, 13, 37, 19, 21, 39, 2, 17, 6, 30, 52, 
-                               12, 30, 5, 13, 48, 35, 58, 45, 14, 19, 35, 48, 12, 53, 45, 17, 5, 2, 
-                               57, 39, 16, 54, 18, 43, 32, 26, 55, 54, 7, 10, 61, 0, 16, 24, 19, 34, 
-                               45, 39, 34, 7, 7, 4, 7, 2, 31, 44, 49, 23, 47, 18, 27, 57, 17, 12, 
-                               14, 51, 51, 24, 29, 4, 59, 61, 31, 51, 18, 4, 37, 46, 40, 9, 38, 27, 
-                               18, 2, 50, 29, 3, 38, 0, 254, 23, 49, 14, 17, 55, 40, 5, 57, 44, 38, 
-                                9, 5, 24, 49, 37, 57, 45, 47, 17, 39, 62, 42, 13, 13, 46, 8, 58, 59, 
-                               39, 4, 4, 48, 62, 13, 6, 51, 37, 20, 30, 43, 42, 17, 60, 18, 159, 17, 
-                               26, 52, 12, 22, 27, 59, 39, 43, 29, 15, 13, 14, 43, 25};
 
 __uint24 kick;
 __uint24 snare;
@@ -183,8 +167,12 @@ void rythmGen(void)
     }
     drumOutput ^= extInput;
     PORTC = drumOutput;
-    for(d=0;d<PulseTime;d++){}; // short pulse
-    PORTC = 0;
+    if(variation<0b1000) // if select pot is halfway to next rythm, switch of the pulse generation mode
+    {
+        for(d=0;d<PulseTime;d++){}; // short pulse
+        PORTC = 0;
+    }
+    
 }
 void countIndex(void)
 {
@@ -230,43 +218,55 @@ void clockedAD()
     index = ADRESH >> 2;
 }
 
+
+void noise(void)
+{
+    if(lock)
+    {
+        unsigned int LSB = nze & 0b1;
+        nze >>=1;
+        nze |= (LSB << 15);
+    }else
+    {
+        unsigned int tap1 = (nze >> 12) & 0b1;
+        unsigned int tap2 = (nze >> 7) & 0b1;
+        unsigned int tap3 = (nze >> 4) & 0b1;
+        unsigned int tap4 = (nze >> 1) & 0b1;
+        unsigned int tap5 = tap4 ^ tap3;
+        unsigned int tap6 = tap5 ^ tap2;
+        nze >>= 1;
+        nze |= ((tap1 ^ tap6) << 15);
+    }
+    index = nze & 0b111111;
+    
+}
 void noiseWave(void)
 {
-    if(index==0)// && lock==0
+    if(lock)
     {
-        char n;
-        for(n=0; n<16;n++)
+        unsigned int LSB = nze & 0b1;
+        nze >>=1;
+        nze |= (LSB << 15);
+    }else
+    {
+        char x = 0;
+        unsigned int tap1, tap2, tap3, tap4, tap5, tap6;
+
+        for(x=0; x < 2; x++)
         {
-            preset[n] = Noise[(oldRValue + n)] ^ Noise[magicVal];
+            tap1 = (nze >> 12) & 0b1;
+            tap2 = (nze >> 7) & 0b1;
+            tap3 = (nze >> 4) & 0b1;
+            tap4 = (nze >> 1) & 0b1;
+            tap5 = tap4 ^ tap3;
+            tap6 = tap5 ^ tap2;
+            nze >>= 1;
+            nze |= ((tap1 ^ tap6) << 15);
         }
-        oldRValue+=7;
-        if(oldRValue % 3 == 0)magicVal++;
-        lock =(funcNumber==RANDWAVE) ? 1 : 0;
-    }
-    index++;
-    if(index>15)
-    {
-        index = 0;
-    }
-}
-void randWave(void)
-{
-    if(index==0 && lock==0)
-    {
-        char n;
-        for(n=0; n<16;n++)
-        {
-            preset[n] = Noise[(oldRValue + n)] ^ Noise[magicVal];
-        }
-        oldRValue+=7;
-        if(oldRValue % 3 == 0)magicVal++;
         lock = 1;
     }
-    index++;
-    if(index>15)
-    {
-        index = 0;
-    }
+    index = nze & 0b111111;
+    
 }
 
 void divide()
@@ -377,16 +377,22 @@ void selectFunction()
             break;
             
         case NOISE:
-            selectedFunction = &noiseWave;
+            selectedFunction = &noise;
             up = 1;
             xorOn = 1;
             index = 0;
+            lock = 0;
+            nze |= 0b1000100000000000;
+            initPresetArray(SELECT_LINEAR);
             break;
             
         case RANDWAVE:
-            selectedFunction = &randWave;
+            selectedFunction = &noiseWave;
             xorOn = 1;
             index = 0;
+            lock = 0;
+            nze |= 0b1000100000000000;
+            initPresetArray(SELECT_LINEAR);
             break;
                 
         case SINEWAVE:
@@ -447,7 +453,7 @@ void main(void) {
             lock ^= 1;
             extUD_noChange = 0;
         }
-        if(!extUD_noChange && UPDOWNINPUT==0)
+        if(!extUD_noChange && !UPDOWNINPUT)
         {
             extUD_noChange = 1;
         }
@@ -469,7 +475,7 @@ void main(void) {
             }
             extRS_noChange = 0;
         }
-        if(!extRS_noChange && RESETINPUT==0)
+        if(!extRS_noChange && !RESETINPUT)
         {
             extRS_noChange = 1;
         }
@@ -486,9 +492,12 @@ void main(void) {
                 PORTC = newValue;
                 oldValue = newValue;
             }
-        }else{
+        }else
+        {
             extInput = ADRESH >> 2;
         }
+        
+        // this handles the selector pot
         if(tick % 16 == 0)
         {
             ADCON0bits.CHS = SELECT_INPUT; // select AN3
@@ -496,13 +505,19 @@ void main(void) {
             for(l=0; l < 8; l++){}
             ADCON0bits.GO_DONE = 1; // start a/d conversion
             while(ADCON0bits.GO_DONE){};
-            char newFuncNumber = ADRESH >> 4;
+            char adResult = ADRESH;
+            char newFuncNumber = (adResult >> 4) & 0b1111;
+            
+            // variation checks if the pot is halfway to the new setting.
+            // this is used by the drum machine part to change from pulse
+            // output to gate output
+            variation = adResult & 0b1000;
             if(newFuncNumber != funcNumber)
             {
                 funcNumber = newFuncNumber;
                 selectFunction();
             }
-            // donÂ´t forget or the external 
+            // don´t forget or the external 
             // input will not be sampled!
             // select AN10
             ADCON0bits.CHS = VOLTAGE_INPUT;
